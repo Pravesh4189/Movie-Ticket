@@ -60,20 +60,29 @@ const releaseSeatsAndDeleteBooking = inngest.createFunction(
 
         await step.run('check-payment-status',async()=>{
             const bookingId = event.data.bookingId;
-            const booking = await Booking.findById(bookingId)
+            const booking = await Booking.findById(bookingId);
 
-            //If payment is not made ,release seats and delete booking
+if (!booking) {
+  console.log("Booking not found (already deleted or invalid):", bookingId);
+  return;
+}
 
-            if(!booking.isPaid)
-            {
-                const show = await Show.findById(booking.show);
-                booking.bookedSeats.forEach((seat)=>{
-                    delete show.occupiedSeats[seat]
-                });
-                show.markModified('occupiedSeats')
-                await show.save()
-                await Booking.findByIdAndDelete(booking._id)
-            }
+// If payment is not made, release seats and delete booking
+if (!booking.isPaid) {
+  const show = await Show.findById(booking.show);
+
+  if (show) {
+    booking.bookedSeats.forEach((seat) => {
+      delete show.occupiedSeats[seat];
+    });
+    show.markModified("occupiedSeats");
+    await show.save();
+  }
+
+  await Booking.findByIdAndDelete(booking._id);
+  console.log("Unpaid booking deleted:", bookingId);
+}
+
         })
     }
 )
