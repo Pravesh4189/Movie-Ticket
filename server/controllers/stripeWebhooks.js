@@ -25,7 +25,8 @@ export const stripeWebhooks = async (request, response)=>{
             //     })
             //     const session = sessionList.data[0];
             //     const {bookingId} = session.metadata;
-              if (bookingId) {
+            const customerEmail = session.customer_details.email;
+            if (bookingId) {
                   await Booking.findByIdAndUpdate(bookingId, {
                     isPaid: true,
                     paymentLink: ""
@@ -34,8 +35,10 @@ export const stripeWebhooks = async (request, response)=>{
                 //Send Confirmation Email
                 await inngest.send({
                     name:"app/show.booked",
-                    data: {bookingId}
+                    data: {bookingId,customerEmail}
+                    
                 });
+                console.log(`✅ Webhook success: Mail will be sent to ${customerEmail}`);
             } 
                 break;
             }

@@ -91,7 +91,7 @@ const sendBookingConfirmationEmail = inngest.createFunction(
     {id: "send-booking-confirmation-email"},
     {event:"app/show.booked"},
     async ({event,step})=>{
-        const {bookingId} = event.data;
+        const {bookingId,customerEmail} = event.data;
         const bookingData = await step.run("fetch-booking-data", async () => {
         const fetchedBooking = await Booking.findById(bookingId).populate({
             path:'show',
@@ -100,14 +100,15 @@ const sendBookingConfirmationEmail = inngest.createFunction(
        return JSON.parse(JSON.stringify(fetchedBooking));
     });
     if (!bookingData || !bookingData.user) {
-      console.log("❌ Data missing for booking:", bookingId);
       return { status: "failed", message: "Booking or User not found" };
     }
-
+   
+            
     // Step 2: Email bhein (Wrap in step.run)
     const mailResponse = await step.run("send-confirmation-email", async () => {
+         const recipient = customerEmail || bookingData.user.email;
       return await sendEmail({
-            to:bookingData.user.email,
+            to:recipient,
             subject:`Payment Confirmation:"${bookingData.show.movie.title}" booked!`,
             body:`<div style="font-family:Arial,sans-serif;line-height:1.5;">
             <h2>Hi ${bookingData.user.name},</h2>
@@ -120,8 +121,7 @@ const sendBookingConfirmationEmail = inngest.createFunction(
             <p>Thanks for booking with us!<br/>- CineBooker Team</p>
             </div>`
         });
-    }
-);
+    });
 return { status: "success", mailResponse };
     }
 );
